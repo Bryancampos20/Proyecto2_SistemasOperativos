@@ -93,5 +93,5 @@ El sistema está diseñado de forma modular:
 
 Si tienes preguntas o sugerencias, no dudes en contactar al autor del proyecto:  
 **Bryan Campos**  
-_Email_: bryan.campos@example.com  
+_Email_: bryancampos20@gmail.com  
 _LinkedIn_: [Perfil LinkedIn](https://www.linkedin.com/in/bryan-campos-castro-138a3a189/)

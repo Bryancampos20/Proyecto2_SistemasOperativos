@@ -1,7 +1,7 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include <pthread.h> // Para manejar hilos
+#include <pthread.h> // Para los hilos
 
 // Estructura para representar un proceso
 typedef struct {
@@ -17,23 +17,11 @@ typedef struct {
     pthread_mutex_t lock;    // Lock para acceso seguro a la cola
 } ProcessQueue;
 
-// Estructura para un recurso compartido
-typedef struct {
-    int id;                  // ID único del recurso
-    int in_use;              // 0: Libre, 1: En uso
-    int owner_node_id;       // Nodo que posee el recurso
-    pthread_mutex_t lock;    // Lock para sincronización
-} Resource;
-
 // Estructura para un nodo
 typedef struct {
     int id;                  // ID del nodo
-    int socket_fd;           // Descriptor del socket
+    int load;                // Carga actual del nodo
     ProcessQueue process_queue; // Cola de procesos del nodo
-    Resource* resources;     // Lista de recursos compartidos
-    int num_resources;       // Número de recursos
-    int active_nodes[10];    // Lista de nodos activos
-    int num_active_nodes;    // Número de nodos activos
 } Node;
 
 // Funciones para manejar la cola de procesos
@@ -41,9 +29,8 @@ void init_queue(ProcessQueue* queue);
 int enqueue(ProcessQueue* queue, Process process);
 int dequeue(ProcessQueue* queue, Process* process);
 
-// Funciones para manejar recursos compartidos
-void init_resource(Resource* resource, int id);
-int request_resource(Resource* resource, int node_id);
-void release_resource(Resource* resource, int node_id);
+// Funciones de asignación y carga
+Node* find_least_loaded_node(Node nodes[], int num_nodes);
+void assign_process_to_node(Node* node, Process process);
 
 #endif // NODE_H

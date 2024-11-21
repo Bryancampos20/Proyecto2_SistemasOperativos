@@ -46,30 +46,9 @@ void init_resource(Resource* resource, int id) {
     pthread_mutex_init(&resource->lock, NULL);
 }
 
-int request_resource(Resource* resource, int node_id) {
-    pthread_mutex_lock(&resource->lock);
-    if (resource->in_use == 0) {
-        resource->in_use = 1;
-        resource->owner_node_id = node_id;
-        pthread_mutex_unlock(&resource->lock);
-        printf("Recurso %d asignado al nodo %d.\n", resource->id, node_id);
-        return 0; // Recurso asignado
-    }
-    pthread_mutex_unlock(&resource->lock);
-    printf("Recurso %d no disponible para el nodo %d.\n", resource->id, node_id);
-    return -1; // Recurso ocupado
-}
-
-void release_resource(Resource* resource, int node_id) {
-    pthread_mutex_lock(&resource->lock);
-    if (resource->in_use == 1 && resource->owner_node_id == node_id) {
-        resource->in_use = 0;
-        resource->owner_node_id = -1;
-        printf("Recurso %d liberado por el nodo %d.\n", resource->id, node_id);
-    } else {
-        printf("Nodo %d no posee el recurso %d.\n", node_id, resource->id);
-    }
-    pthread_mutex_unlock(&resource->lock);
+void redistribute_processes(Node* node, int failed_node_id) {
+    printf("Redistribuyendo procesos del nodo %d.\n", failed_node_id);
+    // Aquí podrías agregar lógica para redistribuir los procesos.
 }
 
 void* process_executor(void* args) {
@@ -78,6 +57,7 @@ void* process_executor(void* args) {
     Process process;
 
     while (1) {
+        check_node_status(node); // Verifica nodos activos
         if (dequeue(queue, &process) == 0) {
             printf("Nodo %d ejecutando proceso %d por %d segundos.\n",
                    node->id, process.id, process.execution_time);
@@ -115,6 +95,12 @@ int main(int argc, char* argv[]) {
     node.num_resources = MAX_RESOURCES;
     node.resources = malloc(sizeof(Resource) * MAX_RESOURCES);
     init_resources(node.resources, MAX_RESOURCES);
+
+    // Inicializa nodos activos
+    node.num_active_nodes = 3;
+    for (int i = 0; i < node.num_active_nodes; i++) {
+        node.active_nodes[i] = i + 1;
+    }
 
     printf("Nodo %d activo en el puerto %d.\n", node.id, PORT + node.id);
 

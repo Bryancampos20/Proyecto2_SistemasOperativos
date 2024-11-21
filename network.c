@@ -6,6 +6,9 @@
 #include <arpa/inet.h>
 
 #define BUFFER_SIZE 1024
+#define PORT 5000 // Puerto base
+
+void redistribute_processes(Node* node, int failed_node_id);
 
 int init_server_socket(int port) {
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -16,7 +19,7 @@ int init_server_socket(int port) {
 
     struct sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY; // Escuchar en todas las interfaces
+    server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(port);
 
     if (bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
@@ -32,6 +35,31 @@ int init_server_socket(int port) {
     }
 
     return server_fd;
+}
+
+void check_node_status(Node* node) {
+    for (int i = 0; i < node->num_active_nodes; i++) {
+        int target_node_id = node->active_nodes[i];
+        int target_port = PORT + target_node_id;
+
+        int sock = socket(AF_INET, SOCK_STREAM, 0);
+        struct sockaddr_in server_addr;
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_port = htons(target_port);
+        server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+        if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+            printf("Nodo %d no responde. Eliminándolo de la lista activa.\n", target_node_id);
+            redistribute_processes(node, target_node_id);
+            for (int j = i; j < node->num_active_nodes - 1; j++) {
+                node->active_nodes[j] = node->active_nodes[j + 1];
+            }
+            node->num_active_nodes--;
+            i--;
+        } else {
+            close(sock);
+        }
+    }
 }
 
 void* handle_connections(void* args) {
@@ -50,16 +78,6 @@ void* handle_connections(void* args) {
         memset(buffer, 0, BUFFER_SIZE);
         if (read(client_socket, buffer, BUFFER_SIZE) > 0) {
             printf("Nodo %d recibió: %s\n", node->id, buffer);
-
-            if (strncmp(buffer, "request", 7) == 0) {
-                int resource_id;
-                sscanf(buffer + 8, "%d", &resource_id);
-                request_resource(&node->resources[resource_id], node->id);
-            } else if (strncmp(buffer, "release", 7) == 0) {
-                int resource_id;
-                sscanf(buffer + 8, "%d", &resource_id);
-                release_resource(&node->resources[resource_id], node->id);
-            }
         }
         close(client_socket);
     }

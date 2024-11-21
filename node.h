@@ -32,6 +32,8 @@ typedef struct {
     ProcessQueue process_queue; // Cola de procesos del nodo
     Resource* resources;     // Lista de recursos compartidos
     int num_resources;       // Número de recursos
+    int active_nodes[10];    // Lista de nodos activos
+    int num_active_nodes;    // Número de nodos activos
 } Node;
 
 // Funciones para manejar la cola de procesos

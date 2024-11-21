@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <unistd.h>
 
 // Inicializa una cola de procesos
 void init_queue(ProcessQueue* queue) {
@@ -36,25 +37,6 @@ int dequeue(ProcessQueue* queue, Process* process) {
     return 0;
 }
 
-// Encuentra el nodo con la menor carga
-Node* find_least_loaded_node(Node nodes[], int num_nodes) {
-    Node* least_loaded = &nodes[0];
-    for (int i = 1; i < num_nodes; i++) {
-        if (nodes[i].load < least_loaded->load) {
-            least_loaded = &nodes[i];
-        }
-    }
-    return least_loaded;
-}
-
-// Asigna un proceso al nodo
-void assign_process_to_node(Node* node, Process process) {
-    enqueue(&node->process_queue, process);
-    node->load += process.execution_time; // Incrementa la carga del nodo
-    printf("Proceso %d asignado al nodo %d con tiempo de ejecución %d.\n",
-           process.id, node->id, process.execution_time);
-}
-
 // Inicializa un recurso compartido
 void init_resource(Resource* resource, int id) {
     resource->id = id;
@@ -86,4 +68,54 @@ void release_resource(Resource* resource, int node_id) {
         printf("Nodo %d liberó el recurso %d.\n", node_id, resource->id);
     }
     pthread_mutex_unlock(&resource->lock);
+}
+
+// Encuentra el nodo con la menor carga
+Node* find_least_loaded_node(Node nodes[], int num_nodes) {
+    Node* least_loaded = NULL;
+    for (int i = 0; i < num_nodes; i++) {
+        if (nodes[i].active && (!least_loaded || nodes[i].load < least_loaded->load)) {
+            least_loaded = &nodes[i];
+        }
+    }
+    return least_loaded;
+}
+
+// Asigna un proceso al nodo
+void assign_process_to_node(Node* node, Process process) {
+    enqueue(&node->process_queue, process);
+    node->load += process.execution_time; // Incrementa la carga del nodo
+    printf("Proceso %d asignado al nodo %d con tiempo de ejecución %d.\n",
+           process.id, node->id, process.execution_time);
+}
+
+// Maneja el fallo de un nodo
+void handle_node_failure(Node nodes[], int num_nodes, int failed_node_id) {
+    printf("Nodo %d ha fallado.\n", failed_node_id);
+    Node* failed_node = NULL;
+
+    for (int i = 0; i < num_nodes; i++) {
+        if (nodes[i].id == failed_node_id) {
+            failed_node = &nodes[i];
+            failed_node->active = 0;
+            break;
+        }
+    }
+
+    if (failed_node) {
+        redistribute_processes(failed_node, nodes, num_nodes);
+    }
+}
+
+// Redistribuye procesos de un nodo fallido
+void redistribute_processes(Node* source_node, Node nodes[], int num_nodes) {
+    Process process;
+    while (dequeue(&source_node->process_queue, &process) == 0) {
+        Node* target_node = find_least_loaded_node(nodes, num_nodes);
+        if (target_node) {
+            assign_process_to_node(target_node, process);
+        } else {
+            printf("No hay nodos disponibles para procesar el proceso %d.\n", process.id);
+        }
+    }
 }

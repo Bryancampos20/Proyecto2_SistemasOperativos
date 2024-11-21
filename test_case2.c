@@ -5,7 +5,6 @@
 #include <unistd.h>
 
 #define NUM_NODES 3
-#define NUM_RESOURCES 1
 
 // Simula solicitudes de nodos a un recurso compartido
 void* simulate_request(void* args) {

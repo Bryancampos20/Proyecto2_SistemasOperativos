@@ -29,6 +29,7 @@ typedef struct {
 typedef struct {
     int id;                  // ID del nodo
     int load;                // Carga actual del nodo
+    int active;              // 1: Activo, 0: Inactivo
     ProcessQueue process_queue; // Cola de procesos del nodo
 } Node;
 
@@ -41,9 +42,13 @@ int dequeue(ProcessQueue* queue, Process* process);
 Node* find_least_loaded_node(Node nodes[], int num_nodes);
 void assign_process_to_node(Node* node, Process process);
 
-// Funciones para manejar recursos compartidos
+// Funciones para manejo de recursos compartidos
 void init_resource(Resource* resource, int id);
 int request_resource(Resource* resource, int node_id);
 void release_resource(Resource* resource, int node_id);
+
+// Funciones para manejo de fallos
+void handle_node_failure(Node nodes[], int num_nodes, int failed_node_id);
+void redistribute_processes(Node* source_node, Node nodes[], int num_nodes);
 
 #endif // NODE_H

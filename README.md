@@ -81,3 +81,17 @@ Para eliminar los archivos generados, ejecuta:
  ```
 make clean
  ```
+
+ ## Arquitectura del Sistema
+
+El sistema está diseñado de forma modular:
+- **Nodos**: Manejan procesos y sincronizan recursos compartidos.
+- **Red**: Coordina la comunicación entre nodos y asegura el balanceo de carga y manejo de fallos.
+- **Recursos Compartidos**: Implementan exclusión mutua para el acceso seguro.
+
+## Contacto
+
+Si tienes preguntas o sugerencias, no dudes en contactar al autor del proyecto:  
+**Bryan Campos**  
+_Email_: bryan.campos@example.com  
+_LinkedIn_: [Perfil LinkedIn](https://www.linkedin.com/in/bryan-campos-castro-138a3a189/)

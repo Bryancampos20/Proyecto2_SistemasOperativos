@@ -1,6 +1,5 @@
 #include "network.h"
 #include <stdio.h>
-#include <unistd.h>
 
 // Simula la comunicación entre nodos
 void simulate_communication(Node nodes[], int num_nodes) {

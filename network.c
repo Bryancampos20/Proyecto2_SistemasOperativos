@@ -1,11 +1,9 @@
-#include "node.h"
 #include "network.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <pthread.h>
 
 #define BUFFER_SIZE 1024
 
@@ -51,18 +49,18 @@ void* handle_connections(void* args) {
 
         memset(buffer, 0, BUFFER_SIZE);
         if (read(client_socket, buffer, BUFFER_SIZE) > 0) {
-            int process_id, execution_time;
-            sscanf(buffer, "%d %d", &process_id, &execution_time);
+            printf("Nodo %d recibió: %s\n", node->id, buffer);
 
-            Process process = {process_id, execution_time};
-            if (enqueue(&node->process_queue, process) == 0) {
-                printf("Nodo %d recibió el proceso %d con tiempo de ejecución %d.\n", 
-                       node->id, process.id, process.execution_time);
-            } else {
-                printf("Nodo %d tiene la cola llena. No se pudo añadir el proceso.\n", node->id);
+            if (strncmp(buffer, "request", 7) == 0) {
+                int resource_id;
+                sscanf(buffer + 8, "%d", &resource_id);
+                request_resource(&node->resources[resource_id], node->id);
+            } else if (strncmp(buffer, "release", 7) == 0) {
+                int resource_id;
+                sscanf(buffer + 8, "%d", &resource_id);
+                release_resource(&node->resources[resource_id], node->id);
             }
         }
-
         close(client_socket);
     }
     return NULL;

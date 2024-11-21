@@ -12,4 +12,4 @@ void* handle_connections(void* args);
 // Enviar mensaje a otro nodo
 int send_message_to_node(int target_port, const char* message);
 
-#endif
+#endif // NETWORK_H

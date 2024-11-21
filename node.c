@@ -6,9 +6,55 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#define PORT 8080
+#define PORT 5000 // Cambiado a partir de 5000 para evitar conflictos
 
-void send_message(Node* node);
+void init_queue(ProcessQueue* queue) {
+    queue->front = 0;
+    queue->rear = 0;
+    pthread_mutex_init(&queue->lock, NULL);
+}
+
+int enqueue(ProcessQueue* queue, Process process) {
+    pthread_mutex_lock(&queue->lock);
+    if ((queue->rear + 1) % 100 == queue->front) {
+        pthread_mutex_unlock(&queue->lock);
+        return -1; // Cola llena
+    }
+    queue->processes[queue->rear] = process;
+    queue->rear = (queue->rear + 1) % 100;
+    pthread_mutex_unlock(&queue->lock);
+    return 0;
+}
+
+int dequeue(ProcessQueue* queue, Process* process) {
+    pthread_mutex_lock(&queue->lock);
+    if (queue->front == queue->rear) {
+        pthread_mutex_unlock(&queue->lock);
+        return -1; // Cola vacía
+    }
+    *process = queue->processes[queue->front];
+    queue->front = (queue->front + 1) % 100;
+    pthread_mutex_unlock(&queue->lock);
+    return 0;
+}
+
+void* process_executor(void* args) {
+    Node* node = (Node*)args;
+    ProcessQueue* queue = &node->process_queue;
+    Process process;
+
+    while (1) {
+        if (dequeue(queue, &process) == 0) {
+            printf("Nodo %d ejecutando proceso %d por %d segundos.\n", 
+                   node->id, process.id, process.execution_time);
+            sleep(process.execution_time); // Simula la ejecución del proceso
+            printf("Nodo %d completó el proceso %d.\n", node->id, process.id);
+        } else {
+            sleep(1); // Espera si no hay procesos
+        }
+    }
+    return NULL;
+}
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -23,47 +69,16 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "No se pudo iniciar el nodo\n");
         exit(EXIT_FAILURE);
     }
+    init_queue(&node.process_queue); // Inicializa la cola de procesos
 
     printf("Nodo %d activo en el puerto %d.\n", node.id, PORT + node.id);
 
-    pthread_t listener_thread;
-    if (pthread_create(&listener_thread, NULL, handle_connections, &node) != 0) {
-        perror("Error al crear el hilo de escucha");
-        close(node.socket_fd);
-        exit(EXIT_FAILURE);
-    }
+    pthread_t executor_thread, connection_thread;
+    pthread_create(&executor_thread, NULL, process_executor, &node);
+    pthread_create(&connection_thread, NULL, handle_connections, &node);
 
-    while (1) {
-        send_message(&node);
-    }
-
-    pthread_cancel(listener_thread);
-    pthread_join(listener_thread, NULL);
+    pthread_join(executor_thread, NULL);
+    pthread_join(connection_thread, NULL);
     close(node.socket_fd);
     return 0;
-}
-
-void send_message(Node* node) {
-    char buffer[1024];
-    printf("\nIngrese mensaje (q para salir): ");
-    fflush(stdout);
-    fgets(buffer, sizeof(buffer), stdin);
-    buffer[strcspn(buffer, "\n")] = 0;
-
-    if (strcmp(buffer, "q") == 0) {
-        exit(EXIT_SUCCESS);
-    }
-
-    int target_node_id;
-    printf("Ingrese el ID del nodo destino: ");
-    fflush(stdout);
-    scanf("%d", &target_node_id);
-    getchar(); // Consumir el salto de línea
-
-    int target_port = PORT + target_node_id;
-    if (send_message_to_node(target_port, buffer) == 0) {
-        printf("[Mensaje enviado]: %s\n", buffer);
-    } else {
-        printf("Error al enviar el mensaje\n");
-    }
 }

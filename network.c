@@ -54,15 +54,11 @@ void* handle_connections(void* args) {
         memset(buffer, 0, BUFFER_SIZE);
         if (read(client_socket, buffer, BUFFER_SIZE) > 0) {
             printf("\n[Mensaje recibido]: %s\n", buffer);
-            fflush(stdout);
+            fflush(stdout); // Asegúrate de que el mensaje se imprime de inmediato
         }
 
         close(client_socket);
-
-        printf("Ingrese mensaje (q para salir): ");
-        fflush(stdout);
     }
-
     return NULL;
 }
 

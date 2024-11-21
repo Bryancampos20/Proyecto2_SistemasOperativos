@@ -45,7 +45,8 @@ int main(int argc, char* argv[]) {
 
 void send_message(Node* node) {
     char buffer[1024];
-    printf("Ingrese mensaje (q para salir): ");
+    printf("\nIngrese mensaje (q para salir): ");
+    fflush(stdout);
     fgets(buffer, sizeof(buffer), stdin);
     buffer[strcspn(buffer, "\n")] = 0;
 
@@ -55,8 +56,9 @@ void send_message(Node* node) {
 
     int target_node_id;
     printf("Ingrese el ID del nodo destino: ");
+    fflush(stdout);
     scanf("%d", &target_node_id);
-    getchar();
+    getchar(); // Consumir el salto de línea
 
     int target_port = PORT + target_node_id;
     if (send_message_to_node(target_port, buffer) == 0) {
